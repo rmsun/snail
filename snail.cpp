@@ -14,6 +14,7 @@ int main( int argc, char** argv )
 	Downloader downLoader;
 	std::string url( argv[1] );
 	downLoader.init( url );
+	std::cout << "file's size is: " << downLoader.getFileSize() << std::endl;
 	downLoader.start();
 
 	return 0;

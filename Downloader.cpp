@@ -135,6 +135,97 @@ void Downloader::start()
 	close( sock.getSocket() );
 }
 
+void Downloader::start(int aBlock, int aStart, int aEnd)
+{
+	Socket sock( mHostName );
+	sock.connect();
+	std::cout << "socket is: " << sock.getSocket() << std::endl;
+
+	std::string request;
+	request.append( "GET " );
+	request.append( "/images/9780321334879/samplepages/0321334876.pdf" );
+	request.append( " HTTP/1.1\r\n" );
+	request.append( "Host: ptgmedia.pearsoncmg.com\r\n" );
+	request.append( "Accept: */*\r\n" );
+	request.append( "\r\n" );
+
+	std::cout << "the request is: " << request << std::endl;
+   
+	char recvBuffer[1024];
+	size_t totalSize = 0;
+	size_t recvedSize = 0;
+	size_t currentSize = 0;
+
+	send( sock.getSocket(), request.c_str(), 512, 0 );
+
+	int i = 0;
+	bool recvedHttpHeader = false;
+	std::ofstream file( mFileName.c_str(), std::ios::binary );
+	if( !file.is_open() )
+	{
+		std::cout << "create file fail!!!" << std::endl;
+		exit( 1 );
+	}
+	float percent = 0.0;
+	do
+	{
+		currentSize = recv(  sock.getSocket(), recvBuffer + i, 1024, 0 );
+		//recvedSize += currentSize;
+		//std::cout << " current size is: " << currentSize << std::endl;
+		if( currentSize > 0 )
+		{
+			//std::cout << "content is: " << recvBuffer << std::endl;
+			if( false == recvedHttpHeader )
+			{
+				i = parseHttpResponse( recvBuffer, currentSize );
+				if( -1 == i)
+				{
+					i = currentSize;
+				}
+				else
+				{
+					std::cout << recvBuffer << std::endl;
+					totalSize = getFileSize( recvBuffer );
+					std::cout << "total size is: " << totalSize << std::endl;
+					recvedHttpHeader = true;
+					file.write( recvBuffer + i, currentSize - i + 1 );
+					i = 0;
+					recvedSize += currentSize - i + 1;
+					//std::cout << "receiveed " << recvedSize << " bytes" << std::endl;
+					percent = (float)recvedSize / (float)totalSize;
+					printf( "%.1lf%%\r", percent * 100 );
+				}
+			}
+			else
+			{
+				file.write( recvBuffer, currentSize );
+				recvedSize += currentSize;
+				//std::cout << "receiveed " << recvedSize << " bytes" << std::endl;
+				i = 0;
+				percent = (float)recvedSize / (float)totalSize;
+				printf( "%.1lf%%\r", percent * 100 );
+				if( recvedSize >= totalSize )
+				{
+					std::cout << "\ndownload complete..." << std::endl;
+					break;
+				}
+			}
+		}
+		else if( currentSize == 0  )
+		{
+			std::cout << "server disconnect" << std::endl;
+			break;
+		}
+		else
+		{
+			std::cout << "recv error !!!" << std::endl;
+			exit( 1 );
+		}
+	}while( 1 );
+	
+	close( sock.getSocket() );
+}
+
 int Downloader::parseHttpResponse( char* aData, int aLength )
 {
 	char *c = aData;
@@ -192,4 +283,63 @@ int Downloader::getFileSize( char* aData )
 		return contentLength;
 	}
 	return 0;
+}
+
+int Downloader::getFileSize()
+{
+	Socket sock( mHostName );
+	sock.connect();
+	std::cout << "start to get file size" << std::endl;
+
+	std::string request;
+	request.append( "HEAD " );
+	request.append( "/images/9780321334879/samplepages/0321334876.pdf" );
+	request.append( " HTTP/1.1\r\n" );
+	request.append( "Host: ptgmedia.pearsoncmg.com\r\n" );
+	request.append( "Accept: */*\r\n" );
+	request.append( "\r\n" );
+
+	std::cout << "the request is: " << request << std::endl;
+
+	char recvBuffer[1024];
+	size_t totalSize = 0;
+	size_t currentSize = 0;
+
+	send( sock.getSocket(), request.c_str(), 512, 0 );
+
+	int i = 0;
+	
+	do
+	{
+		currentSize = recv( sock.getSocket(), recvBuffer + i, 1024, 0 );
+	
+		if( currentSize > 0 )
+		{						
+			i = parseHttpResponse( recvBuffer, currentSize );
+			if( -1 == i)
+			{
+				i = currentSize;
+			}
+			else
+			{
+				std::cout << recvBuffer << std::endl;
+				totalSize = getFileSize( recvBuffer );
+				break;
+			}
+				
+		}
+		else if( currentSize == 0  )
+		{
+			std::cout << "server disconnect" << std::endl;
+			break;
+		}
+		else
+		{
+			std::cout << "recv error !!!" << std::endl;
+			exit( 1 );
+		}
+	}while( 1 );
+	
+	close( sock.getSocket() );
+	return totalSize;
 }
