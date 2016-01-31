@@ -1,0 +1,5 @@
+env = Environment()
+env.Program(target = 'snail', source = Split('snail.cpp Downloader.cpp Socket.cpp Thread.cpp'))
+env.Append(CCFLAGS = '-g')
+env.Append(CPPPATH = ['.'])
+env.Append(LIBS = ['pthread'])

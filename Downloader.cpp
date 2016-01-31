@@ -31,7 +31,7 @@ void Downloader::parseUrl()
 		mPath.assign( mUrl, pos, mUrl.size() - pos + 1 );
 		std::cout << "path is: " << mPath << std::endl;
 	}
-	
+
 	pos = mUrl.find_last_of( '/' );
 	if( std::string::npos != pos )
 	{
@@ -52,14 +52,15 @@ void Downloader::start()
 	std::string request;
 	request.append( "GET " );
 	//request.append( "%2fimages%2f9780321334879%2fsamplepages%2f0321334876%2epdf" );
-	request.append( "/images/9780321334879/samplepages/0321334876.pdf" );
+	//request.append( "/images/9780321334879/samplepages/0321334876.pdf" );
+	request.append( mPath );
 	request.append( " HTTP/1.1\r\n" );
 	request.append( "Host: ptgmedia.pearsoncmg.com\r\n" );
 	request.append( "Accept: */*\r\n" );
 	request.append( "\r\n" );
 
 	std::cout << "the request is: " << request << std::endl;
-   
+
 	char recvBuffer[1024];
 	size_t totalSize = 0;
 	size_t recvedSize = 0;
@@ -131,7 +132,7 @@ void Downloader::start()
 			exit( 1 );
 		}
 	}while( 1 );
-	
+
 	close( sock.getSocket() );
 }
 
@@ -150,7 +151,7 @@ void Downloader::start(int aBlock, int aStart, int aEnd)
 	request.append( "\r\n" );
 
 	std::cout << "the request is: " << request << std::endl;
-   
+
 	char recvBuffer[1024];
 	size_t totalSize = 0;
 	size_t recvedSize = 0;
@@ -222,7 +223,7 @@ void Downloader::start(int aBlock, int aStart, int aEnd)
 			exit( 1 );
 		}
 	}while( 1 );
-	
+
 	close( sock.getSocket() );
 }
 
@@ -231,7 +232,7 @@ int Downloader::parseHttpResponse( char* aData, int aLength )
 	char *c = aData;
 	for( int i = 0; i < aLength; ++i )
 	{
-		if( *( c + i) == '\r' 
+		if( *( c + i) == '\r'
 			&& *( c + i + 1 ) == '\n'
 			&& *( c + i + 2 ) == '\r'
 			&& *( c + i + 3 ) == '\n' )
@@ -308,13 +309,13 @@ int Downloader::getFileSize()
 	send( sock.getSocket(), request.c_str(), 512, 0 );
 
 	int i = 0;
-	
+
 	do
 	{
 		currentSize = recv( sock.getSocket(), recvBuffer + i, 1024, 0 );
-	
+
 		if( currentSize > 0 )
-		{						
+		{
 			i = parseHttpResponse( recvBuffer, currentSize );
 			if( -1 == i)
 			{
@@ -326,7 +327,7 @@ int Downloader::getFileSize()
 				totalSize = getFileSize( recvBuffer );
 				break;
 			}
-				
+
 		}
 		else if( currentSize == 0  )
 		{
@@ -339,7 +340,7 @@ int Downloader::getFileSize()
 			exit( 1 );
 		}
 	}while( 1 );
-	
+
 	close( sock.getSocket() );
 	return totalSize;
 }

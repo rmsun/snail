@@ -21,6 +21,7 @@ public:
 	std::string mHostName;
 	std::string mUrl;
 	std::string mPath;
+    std::string mHost;
 };
 
 #endif
